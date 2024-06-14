@@ -1,118 +1,113 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, { useEffect, useState } from "react";
+import { View, Text, TextInput,TouchableOpacity, FlatList, Image} from "react-native";
+import dibujar from "./Styles";
+import RenderItem from "./RenderItem";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
+const tareas = [
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+]
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+ export interface Task{
+  Titulo:string,
+  estado:boolean,
+  fecha: Date
+}
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
+
+export default function App(){
+  const [text,setText] = useState('')
+  const [tareas,setTask] = useState<Task[]>([])
+
+  const storeData = async (value:Task[])=>{
+    try{
+      await AsyncStorage.setItem('my-key',JSON.stringify(value));
+    }
+    catch(error){
+
+    }
+  }
+
+  const getData = async()=>{
+    try{
+      const value = await AsyncStorage.getItem('my-key');
+      if(value!==null){
+        const tasksLocal=JSON.parse(value)
+        setTask(tasksLocal)
+      }
+    }
+    catch(error){
+
+    }
+  }
+
+  useEffect(()=>{
+    getData()
+  },[])
+
+  const addTask = ()=>{
+    const tmp=[...tareas]
+    const newTask ={
+      Titulo:text,
+      estado:false,
+      fecha: new Date()
+    }
+
+    if(tareas.some(tarea => tarea.Titulo === newTask.Titulo)){
+      console.log("La tarea ya se encuentra registrada")
+    }
+    else{
+      tmp.push(newTask)
+      setTask(tmp)
+      storeData(tmp)
+      setText('')
+    }
+  }
+  const markdone=(tarea:Task)=>{
+    const tmp = [...tareas]
+    const index = tmp.findIndex(k=>k.Titulo===tarea.Titulo)
+    const t = tmp[index]
+    t.estado =! t.estado
+    setTask(tmp)
+    storeData(tmp)
+  }
+  const deleteFunction=(tarea:Task)=>{
+    const tmp = [...tareas]
+    const index = tmp.findIndex(k=>k.Titulo===tarea.Titulo)
+    tmp.splice(index,1)
+    setTask(tmp)
+    storeData(tmp)
+  }
+  return(
+    <View style={dibujar.Container}>
+      <Text style={dibujar.Title}>
+        Bienvenido usuario.
       </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
+      <Text style={dibujar.Title}>
+        Gestor de tareas.
       </Text>
+      <View style={dibujar.InputContainer}>
+        <TextInput placeholder="Ingresar tarea" value={text} onChangeText={(t:string)=>{
+          setText(t)
+        }} style={dibujar.TextInput}/>
+        <TouchableOpacity style={dibujar.Buttonn} onPress={addTask}>
+          <Text style={dibujar.wtext}>
+            Enviar
+          </Text>
+        </TouchableOpacity>
+      </View>
+      <View >
+        <FlatList
+        renderItem={({item})=>
+        (<RenderItem
+        item={item}
+        markDone={markdone}
+        deleteFunction={deleteFunction}
+        />)}
+        data={tareas}
+        />
+      </View>
     </View>
-  );
-}
-
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
-  };
-
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
-
-export default App;
+    
+  )
+  }
